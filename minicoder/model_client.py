@@ -22,6 +22,7 @@ class ToolCall:
 @dataclass
 class ModelResponse:
     content: str = ""
+    reasoning_content: str | None = None
     tool_calls: list[ToolCall] = field(default_factory=list)
     raw_tool_calls: list[dict[str, Any]] = field(default_factory=list)
 
@@ -42,13 +43,7 @@ class OpenAICompatibleClient:
     def complete(
         self, messages: list[dict[str, Any]], tools: list[dict[str, Any]]
     ) -> ModelResponse:
-        payload = {
-            "model": self.config.model,
-            "messages": messages,
-            "tools": tools,
-            "tool_choice": "auto",
-            "temperature": 0.1,
-        }
+        payload = self._build_payload(messages, tools)
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         request = urllib.request.Request(
             self.config.api_url,
@@ -68,11 +63,44 @@ class OpenAICompatibleClient:
                 ) as response:
                     data = json.loads(response.read().decode("utf-8"))
                 return self._parse_response(data)
-            except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, KeyError, IndexError) as exc:
+            except urllib.error.HTTPError as exc:
+                error_body = exc.read().decode("utf-8", errors="replace")
+                last_error = RuntimeError(
+                    f"Model API returned HTTP {exc.code}: {error_body[:2000]}"
+                )
+                retryable = exc.code in {408, 409, 429} or exc.code >= 500
+                if not retryable:
+                    raise last_error from exc
+            except (
+                urllib.error.URLError,
+                TimeoutError,
+                json.JSONDecodeError,
+                KeyError,
+                IndexError,
+            ) as exc:
                 last_error = exc
-                if attempt < self.config.max_retries:
-                    time.sleep(1.5 * (attempt + 1))
+            if attempt < self.config.max_retries:
+                time.sleep(1.5 * (attempt + 1))
         raise RuntimeError(f"Model request failed after retries: {last_error}") from last_error
+
+    def _build_payload(
+        self, messages: list[dict[str, Any]], tools: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        payload = {
+            "model": self.config.model,
+            "messages": messages,
+            "tools": tools,
+            "tool_choice": "auto",
+            "stream": False,
+        }
+        if self.config.thinking_mode is not None:
+            payload["thinking"] = {"type": self.config.thinking_mode}
+        if (
+            self.config.reasoning_effort is not None
+            and self.config.thinking_mode != "disabled"
+        ):
+            payload["reasoning_effort"] = self.config.reasoning_effort
+        return payload
 
     @staticmethod
     def _parse_response(data: dict[str, Any]) -> ModelResponse:
@@ -101,7 +129,7 @@ class OpenAICompatibleClient:
             )
         return ModelResponse(
             content=message.get("content") or "",
+            reasoning_content=message.get("reasoning_content"),
             tool_calls=calls,
             raw_tool_calls=raw_calls,
         )
-

@@ -10,6 +10,10 @@
 
 The model decides *which* action to take, while deterministic Python code decides *whether and how* that action is executed.
 
+When DeepSeek thinking mode is enabled, every assistant message preserves its
+`reasoning_content` field and replays it unchanged with later tool-result requests,
+as required by the DeepSeek Chat Completions protocol.
+
 ## Safety boundary
 
 - Every file path is resolved and checked against the workspace root.

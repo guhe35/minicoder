@@ -30,6 +30,8 @@ class Config:
     api_url: str
     api_key: str
     model: str
+    thinking_mode: str | None = None
+    reasoning_effort: str | None = None
     request_timeout: int = 90
     max_retries: int = 2
 
@@ -40,6 +42,8 @@ class Config:
             api_url=os.getenv("MODEL_API_URL", ""),
             api_key=os.getenv("MODEL_API_KEY", ""),
             model=os.getenv("MODEL_NAME", ""),
+            thinking_mode=os.getenv("MODEL_THINKING") or None,
+            reasoning_effort=os.getenv("MODEL_REASONING_EFFORT") or None,
             request_timeout=int(os.getenv("MODEL_TIMEOUT_SECONDS", "90")),
             max_retries=int(os.getenv("MODEL_MAX_RETRIES", "2")),
         )
@@ -61,4 +65,20 @@ class Config:
                 f"Model configuration is incomplete: {names}. "
                 "Copy .env.example to .env and replace its placeholders."
             )
-
+        if self.thinking_mode not in {None, "enabled", "disabled"}:
+            raise ValueError("MODEL_THINKING must be 'enabled' or 'disabled'")
+        if self.reasoning_effort not in {
+            None,
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max",
+        }:
+            raise ValueError(
+                "MODEL_REASONING_EFFORT must be low, medium, high, xhigh, or max"
+            )
+        if self.request_timeout < 1:
+            raise ValueError("MODEL_TIMEOUT_SECONDS must be positive")
+        if self.max_retries < 0:
+            raise ValueError("MODEL_MAX_RETRIES must not be negative")

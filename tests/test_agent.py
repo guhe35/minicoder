@@ -35,10 +35,12 @@ class AgentLoopTests(unittest.TestCase):
             client = ScriptedClient(
                 [
                     ModelResponse(
+                        reasoning_content="I will create the requested file.",
                         tool_calls=[ToolCall("call_write", "write_file", {"path": "answer.py", "content": "print(42)\n"})],
                         raw_tool_calls=[first_raw],
                     ),
                     ModelResponse(
+                        reasoning_content="The file is ready; now I should run it.",
                         tool_calls=[ToolCall("call_run", "run_command", {"command": "python answer.py"})],
                         raw_tool_calls=[second_raw],
                     ),
@@ -54,6 +56,12 @@ class AgentLoopTests(unittest.TestCase):
             tool_messages = [message for message in result.messages if message["role"] == "tool"]
             self.assertEqual(len(tool_messages), 2)
             self.assertIn('"exit_code": 0', tool_messages[1]["content"])
+            replayed_assistant = client.requests[1][-2]
+            self.assertEqual(replayed_assistant["role"], "assistant")
+            self.assertEqual(
+                replayed_assistant["reasoning_content"],
+                "I will create the requested file.",
+            )
 
     def test_step_limit_stops_runaway_agent(self) -> None:
         call = raw_call("call_1", "list_files", "{}")
@@ -69,4 +77,3 @@ class AgentLoopTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

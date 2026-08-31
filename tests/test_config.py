@@ -27,7 +27,15 @@ class ConfigTests(unittest.TestCase):
                 load_dotenv(env_file)
                 self.assertEqual(os.environ["MODEL_NAME"], "from-process")
 
+    def test_rejects_invalid_deepseek_options(self) -> None:
+        with self.assertRaises(ValueError):
+            Config(
+                api_url="https://api.deepseek.com/chat/completions",
+                api_key="sk-test",
+                model="deepseek-v4-pro",
+                thinking_mode="sometimes",
+            ).validate()
+
 
 if __name__ == "__main__":
     unittest.main()
-

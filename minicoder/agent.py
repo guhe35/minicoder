@@ -58,7 +58,13 @@ class Agent:
                     status = "error"
                 else:
                     status = "completed"
-                messages.append({"role": "assistant", "content": answer})
+                final_message: dict[str, Any] = {
+                    "role": "assistant",
+                    "content": answer,
+                }
+                if response.reasoning_content is not None:
+                    final_message["reasoning_content"] = response.reasoning_content
+                messages.append(final_message)
                 self.event_handler("finished", {"step": step, "status": status})
                 return AgentResult(status, answer, step, messages)
 
@@ -67,6 +73,10 @@ class Agent:
                 "content": response.content or None,
                 "tool_calls": response.raw_tool_calls,
             }
+            # DeepSeek thinking-mode tool calls require this field to be replayed
+            # unchanged in every subsequent request.
+            if response.reasoning_content is not None:
+                assistant_message["reasoning_content"] = response.reasoning_content
             messages.append(assistant_message)
 
             for call in response.tool_calls:
@@ -89,4 +99,3 @@ class Agent:
         answer = f"Stopped after reaching the safety limit of {self.max_steps} model steps."
         self.event_handler("finished", {"step": self.max_steps, "status": "step_limit"})
         return AgentResult("step_limit", answer, self.max_steps, messages)
-
