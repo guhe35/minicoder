@@ -1,6 +1,6 @@
 MiniCoder：从零实现的轻量编程智能体
 
-Git仓库：待创建公开仓库后填写
+Git仓库：https://github.com/guhe35/minicoder
 
 项目简介：MiniCoder通过兼容OpenAI格式的模型接口接收原生tool calling结果，在本地循环执行文件读取、文件搜索、写入、精确替换和开发命令，直到模型给出最终答案或达到安全轮次上限。项目未使用任何agent框架或服务端代码执行工具。
 
