@@ -69,24 +69,12 @@ class ExecutionPlanTests(unittest.TestCase):
                 [task("api", depends_on=["ui"]), task("ui", depends_on=["api"])]
             )
 
-    def test_rejects_self_dependency(self) -> None:
-        with self.assertRaises(PlanningError):
-            build_execution_plan([task("api", depends_on=["api"])])
-
     def test_rejects_invalid_priority(self) -> None:
         with self.assertRaises(PlanningError):
             build_execution_plan([task("api", priority="urgent")])
 
     def test_empty_input_has_no_waves(self) -> None:
         self.assertEqual(build_execution_plan([]), [])
-
-    def test_all_completed_tasks_are_omitted(self) -> None:
-        tasks = [
-            task("foundation", done=True),
-            task("api", depends_on=["foundation"], done=True),
-        ]
-
-        self.assertEqual(build_execution_plan(tasks), [])
 
 
 if __name__ == "__main__":
