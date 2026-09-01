@@ -2,6 +2,7 @@
 
 from .agent import Agent, AgentResult
 from .config import Config
+from .verification import VerificationReport
 
-__all__ = ["Agent", "AgentResult", "Config"]
+__all__ = ["Agent", "AgentResult", "Config", "VerificationReport"]
 

@@ -27,6 +27,8 @@ def print_event(event: str, data: dict[str, Any]) -> None:
         if len(preview) > 700:
             preview = preview[:700] + "..."
         print(f"  <- {marker}: {preview}")
+    elif event == "completion_rejected":
+        print(f"  !! completion rejected: {data['reason']}")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -61,7 +63,8 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     print(f"\n[{result.status}] after {result.steps} step(s)\n{result.answer}")
-    return 0 if result.status == "completed" else 1
+    print(f"\n{result.verification.format_text()}")
+    return 0 if result.status in {"completed", "verified"} else 1
 
 
 if __name__ == "__main__":
