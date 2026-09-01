@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <link rel="icon" href="data:," />
+    <title>MiniCoder — 可验证编程智能体</title>
+    <link rel="stylesheet" href="/app.css" />
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+    <header class="masthead reveal reveal-1">
+      <div class="brand-block">
+        <span class="brand-index">MC / 01</span>
+        <div>
+          <h1>MiniCoder</h1>
+          <p>基于执行证据的编程智能体</p>
+        </div>
+      </div>
+      <div class="system-state" id="system-state" data-state="connecting">
+        <span class="state-light" aria-hidden="true"></span>
+        <span id="system-label">正在连接</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="mission-grid reveal reveal-2">
+        <aside class="control-panel panel">
+          <div class="section-kicker">01 / 任务配置</div>
+          <h2>发起真实编程任务</h2>
+          <p class="panel-copy">
+            模型负责决定下一步，本地工具负责真实执行，验证证据负责判断任务是否完成。
+          </p>
+
+          <form id="run-form">
+            <label for="task">编程任务</label>
+            <textarea id="task" name="task" rows="9" spellcheck="false">读取 TASK.txt，检查现有实现和测试，完成全部需求并补充完整测试；运行 python -m unittest -v，并且只在最新修改通过验证后结束任务。</textarea>
+
+            <div class="field-row">
+              <div class="field-grow">
+                <label for="workspace">工作区</label>
+                <input id="workspace" name="workspace" value="demo_project" />
+              </div>
+              <div class="field-steps">
+                <label for="max-steps">最大轮数</label>
+                <input id="max-steps" name="max-steps" type="number" min="1" max="50" value="15" />
+              </div>
+            </div>
+
+            <button class="run-button" id="run-button" type="submit">
+              <span id="run-label">运行智能体</span>
+              <span class="run-arrow" aria-hidden="true">↗</span>
+            </button>
+          </form>
+
+          <div class="security-note">
+            <span>仅限本地</span>
+            API 密钥只保存在 Python 服务端的 <code>.env</code> 中。
+          </div>
+        </aside>
+
+        <section class="trace-panel panel" aria-labelledby="trace-heading">
+          <div class="panel-heading">
+            <div>
+              <div class="section-kicker">02 / 实时轨迹</div>
+              <h2 id="trace-heading">智能体执行过程</h2>
+            </div>
+            <div class="trace-meta">
+              <span id="elapsed">00:00</span>
+              <button id="clear-button" type="button">清空</button>
+            </div>
+          </div>
+
+          <div class="trace-empty" id="trace-empty">
+            <div class="empty-mark">⌁</div>
+            <p>等待任务开始</p>
+            <span>模型轮次、工具调用和执行结果将在这里实时显示。</span>
+          </div>
+          <div class="trace-list" id="trace-list" aria-live="polite"></div>
+        </section>
+      </section>
+
+      <section class="evidence-panel panel reveal reveal-3" aria-labelledby="evidence-heading">
+        <div class="evidence-title">
+          <div>
+            <div class="section-kicker">03 / 验证账本</div>
+            <h2 id="evidence-heading">没有证据，就不能宣布完成</h2>
+          </div>
+          <div class="verdict" id="verdict" data-state="idle">尚未运行</div>
+        </div>
+
+        <div class="ledger-grid">
+          <article class="metric-card">
+            <span class="metric-label">模型调用</span>
+            <strong id="model-calls">—</strong>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">工具调用</span>
+            <strong id="tool-calls">—</strong>
+          </article>
+          <article class="files-card">
+            <span class="metric-label">修改文件</span>
+            <div class="chip-list" id="changed-files"><span class="muted">暂无修改</span></div>
+          </article>
+          <article class="evidence-card">
+            <span class="metric-label">验证轨迹</span>
+            <div id="evidence-list" class="evidence-list">
+              <span class="muted">验证命令及退出码将在这里记录。</span>
+            </div>
+          </article>
+        </div>
+
+        <div class="final-answer" id="final-answer" hidden>
+          <span class="metric-label">智能体总结</span>
+          <p id="answer-text"></p>
+          <div class="reason-line" id="reason-text"></div>
+        </div>
+      </section>
+
+      <section class="principle-strip reveal reveal-4" aria-label="架构原则">
+        <span>模型决策</span>
+        <i>→</i>
+        <span>工具执行</span>
+        <i>→</i>
+        <span>证据验证</span>
+      </section>
+    </main>
+
+    <template id="trace-template">
+      <article class="trace-item">
+        <div class="trace-rail"><span></span></div>
+        <div class="trace-content">
+          <div class="trace-title-row">
+            <span class="trace-kind"></span>
+            <time class="trace-time"></time>
+          </div>
+          <h3 class="trace-title"></h3>
+          <p class="trace-summary"></p>
+          <details class="trace-details" hidden>
+            <summary>查看详细数据</summary>
+            <pre></pre>
+          </details>
+        </div>
+      </article>
+    </template>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>

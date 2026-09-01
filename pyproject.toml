@@ -11,7 +11,11 @@ dependencies = []
 
 [project.scripts]
 minicoder = "minicoder.cli:main"
+minicoder-web = "minicoder.web:main"
 
 [tool.setuptools.packages.find]
 include = ["minicoder*"]
+
+[tool.setuptools.package-data]
+minicoder = ["web_static/*"]
 

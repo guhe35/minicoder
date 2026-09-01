@@ -33,6 +33,10 @@ as required by the DeepSeek Chat Completions protocol.
 
 This is risk reduction rather than a complete sandbox. A production version should run commands in an isolated container with resource and network limits.
 
+## Local recording console
+
+`python -m minicoder.web` starts a standard-library HTTP server bound to `127.0.0.1`. The browser submits a task and receives newline-delimited JSON events as the existing Agent callback fires. The server reads `.env`; credentials are never included in frontend payloads. Browser-supplied workspaces must be relative directories below the configured server root, and a lock permits only one active run. The interface visualizes model steps, tool results, completion rejection, changed files and the final evidence trail.
+
 ## Main trade-offs
 
 - Native tool calling gives structured arguments but ties the current adapter to compatible APIs.

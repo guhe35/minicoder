@@ -12,4 +12,6 @@ Git仓库：https://github.com/guhe35/minicoder
 
 测试：python -m unittest discover -s tests -v
 
+可视化演示：python -m minicoder.web，浏览器打开http://127.0.0.1:8765。界面实时展示模型轮次、工具调用、修改文件和验证证据，API Key只由本地Python服务读取，不发送给前端。
+
 当前限制：仅支持兼容OpenAI Chat Completions工具调用格式的模型；命令白名单偏保守；长对话尚未自动压缩。
