@@ -29,7 +29,7 @@ class WebConsoleTests(unittest.TestCase):
         self.assertEqual(payload["event"], "repair_started")
         self.assertEqual(payload["data"]["text"], "中文")
 
-    def test_serves_interface_and_health_endpoint(self) -> None:
+    def test_serves_showcase_interface_assets_and_health_endpoint(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             server = create_server(root, root / ".env", port=0)
@@ -39,6 +39,8 @@ class WebConsoleTests(unittest.TestCase):
             try:
                 with urlopen(f"{base_url}/", timeout=3) as response:
                     html = response.read().decode("utf-8")
+                with urlopen(f"{base_url}/app.css", timeout=3) as response:
+                    css = response.read().decode("utf-8")
                 with urlopen(f"{base_url}/api/health", timeout=3) as response:
                     health = json.loads(response.read().decode("utf-8"))
             finally:
@@ -46,7 +48,11 @@ class WebConsoleTests(unittest.TestCase):
                 server.server_close()
                 thread.join(timeout=3)
             self.assertIn("可修复、可验证、可评测的编程智能体", html)
+            self.assertIn("依赖感知迭代任务调度器", html)
+            self.assertIn('value="showcase_project"', html)
             self.assertIn("下载 JSON 报告", html)
+            self.assertIn(".demo-brief", css)
+            self.assertIn(".trace-empty[hidden]", css)
             self.assertTrue(health["ok"])
 
 

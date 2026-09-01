@@ -517,3 +517,95 @@ textarea, input { background: #ffffff; }
 }
 
 .trace-empty[hidden] { display: none; }
+
+.demo-brief {
+  margin: 18px 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(135deg, rgba(47, 109, 80, 0.065), transparent 58%),
+    #fbfcf8;
+}
+
+.brief-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: baseline;
+}
+
+.brief-heading span {
+  color: var(--acid);
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.brief-heading strong {
+  font: 600 13px var(--mono);
+  text-align: right;
+}
+
+.challenge-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 13px;
+}
+
+.challenge-tags span {
+  padding: 5px 7px;
+  border: 1px solid rgba(47, 109, 80, 0.22);
+  color: var(--acid);
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 8px;
+}
+
+.demo-flow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  margin: 15px 0 0;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+}
+
+.demo-flow li {
+  position: relative;
+  min-width: 0;
+  padding-right: 8px;
+}
+
+.demo-flow li:not(:last-child)::after {
+  content: "→";
+  position: absolute;
+  top: 1px;
+  right: 5px;
+  color: #a6aaa3;
+}
+
+.demo-flow b,
+.demo-flow span {
+  display: block;
+}
+
+.demo-flow b {
+  margin-bottom: 4px;
+  color: var(--acid);
+  font-size: 8px;
+}
+
+.demo-flow span {
+  color: var(--paper-dim);
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.control-panel form { margin-top: 18px; }
+
+@media (max-width: 620px) {
+  .brief-heading { display: block; }
+  .brief-heading strong { display: block; margin-top: 5px; text-align: left; }
+  .demo-flow { grid-template-columns: repeat(2, 1fr); gap: 10px 0; }
+}

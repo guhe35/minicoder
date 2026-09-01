@@ -12,7 +12,7 @@
     <div class="grain" aria-hidden="true"></div>
     <header class="masthead reveal reveal-1">
       <div class="brand-block">
-        <span class="brand-index">MC / 02</span>
+        <span class="brand-index">MC / 03</span>
         <div>
           <h1>MiniCoder</h1>
           <p>可修复、可验证、可评测的编程智能体</p>
@@ -27,43 +27,63 @@
     <main>
       <section class="mission-grid reveal reveal-2">
         <aside class="control-panel panel">
-          <div class="section-kicker">01 / 任务配置</div>
-          <h2>发起真实编程任务</h2>
+          <div class="section-kicker">01 / Showcase challenge</div>
+          <h2>运行依赖调度器挑战</h2>
           <p class="panel-copy">
-            模型负责决策，本地工具负责执行；测试失败将触发修复轮次，最终由确定性证据判断是否完成。
+            一个包含依赖图、确定性排序、输入校验与跨文件报告的真实任务，专门用于展示智能体从失败测试走向可信完成的全过程。
           </p>
+
+          <section class="demo-brief" aria-label="演示任务概览">
+            <div class="brief-heading">
+              <span>推荐演示</span>
+              <strong>依赖感知迭代任务调度器</strong>
+            </div>
+            <div class="challenge-tags" aria-label="任务难点">
+              <span>跨文件实现</span>
+              <span>拓扑分层</span>
+              <span>循环检测</span>
+              <span>深拷贝</span>
+              <span>10+ 测试</span>
+            </div>
+            <ol class="demo-flow">
+              <li><b>01</b><span>复现失败</span></li>
+              <li><b>02</b><span>分析依赖</span></li>
+              <li><b>03</b><span>跨文件修复</span></li>
+              <li><b>04</b><span>验证与报告</span></li>
+            </ol>
+          </section>
 
           <form id="run-form">
             <label for="task">编程任务</label>
-            <textarea id="task" name="task" rows="9" spellcheck="false">读取 TASK.txt，检查现有实现和测试，完成全部需求并补充完整测试；运行 python -m unittest -v，并且只在最新修改通过验证后结束任务。</textarea>
+            <textarea id="task" name="task" rows="7" spellcheck="false">读取 TASK.md 并严格完成全部需求。首先运行 python -m unittest discover -s tests -v 复现现有失败，再检查源码与测试，完成依赖调度、异常校验和 Markdown 报告，并至少补充 2 个边界测试。最后重新运行全部测试和 python demo.py；只在最新修改通过验证后结束，并用中文总结算法、修改文件、修复过程和验证结果。</textarea>
 
             <div class="field-row">
               <div class="field-grow">
                 <label for="workspace">工作区</label>
-                <input id="workspace" name="workspace" value="demo_project" />
+                <input id="workspace" name="workspace" value="showcase_project" />
               </div>
               <div class="field-steps">
                 <label for="max-steps">最大轮数</label>
-                <input id="max-steps" name="max-steps" type="number" min="1" max="50" value="15" />
+                <input id="max-steps" name="max-steps" type="number" min="1" max="50" value="22" />
               </div>
             </div>
 
             <button class="run-button" id="run-button" type="submit">
-              <span id="run-label">运行智能体</span>
+              <span id="run-label">开始复杂任务演示</span>
               <span class="run-arrow" aria-hidden="true">↗</span>
             </button>
           </form>
 
           <div class="security-note">
             <span>仅限本地</span>
-            API 密钥只保存在 Python 服务端的 <code>.env</code> 中。
+            API 密钥只保存在 Python 服务端的 <code>.env</code> 中，任务执行被限制在指定工作区。
           </div>
         </aside>
 
         <section class="trace-panel panel" aria-labelledby="trace-heading">
           <div class="panel-heading">
             <div>
-              <div class="section-kicker">02 / 实时轨迹</div>
+              <div class="section-kicker">02 / Live execution trace</div>
               <h2 id="trace-heading">智能体执行过程</h2>
             </div>
             <div class="trace-meta">
@@ -74,8 +94,8 @@
 
           <div class="trace-empty" id="trace-empty">
             <div class="empty-mark">⌁</div>
-            <p>等待任务开始</p>
-            <span>模型轮次、验证失败和修复动作将在这里实时显示。</span>
+            <p>等待复杂任务开始</p>
+            <span>文件读取、初始失败、代码修改、自修复与最终验证将在这里实时展开。</span>
           </div>
           <div class="trace-list" id="trace-list" aria-live="polite"></div>
         </section>
@@ -84,8 +104,8 @@
       <section class="evidence-panel panel reveal reveal-3" aria-labelledby="evidence-heading">
         <div class="evidence-title">
           <div>
-            <div class="section-kicker">03 / 验证账本</div>
-            <h2 id="evidence-heading">没有证据，就不能宣布完成</h2>
+            <div class="section-kicker">03 / Evidence ledger</div>
+            <h2 id="evidence-heading">从失败测试到可验证完成</h2>
           </div>
           <div class="verdict" id="verdict" data-state="idle">尚未运行</div>
         </div>
@@ -134,8 +154,8 @@
       </section>
 
       <section class="principle-strip reveal reveal-4" aria-label="架构原则">
-        <span>模型决策</span><i>→</i><span>工具执行</span><i>→</i>
-        <span>证据验证</span><i>→</i><span>失败修复</span><i>→</i><span>量化报告</span>
+        <span>读取仓库</span><i>→</i><span>复现失败</span><i>→</i>
+        <span>自主修改</span><i>→</i><span>证据验证</span><i>→</i><span>量化报告</span>
       </section>
     </main>
 
