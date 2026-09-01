@@ -514,3 +514,6 @@ textarea, input { background: #ffffff; }
   .run-metrics { grid-template-columns: repeat(2, 1fr); }
   .run-metrics article { border-bottom: 1px solid var(--line); }
   .result-heading { align-items: flex-start; }
+}
+
+.trace-empty[hidden] { display: none; }
