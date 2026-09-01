@@ -23,10 +23,10 @@ class WebConsoleTests(unittest.TestCase):
                 resolve_workspace(root, str(workspace.resolve()))
 
     def test_event_encoding_uses_one_ndjson_record(self) -> None:
-        encoded = encode_event("tool_end", {"ok": True, "text": "中文"})
+        encoded = encode_event("repair_started", {"number": 1, "text": "中文"})
         self.assertTrue(encoded.endswith(b"\n"))
         payload = json.loads(encoded.decode("utf-8"))
-        self.assertEqual(payload["event"], "tool_end")
+        self.assertEqual(payload["event"], "repair_started")
         self.assertEqual(payload["data"]["text"], "中文")
 
     def test_serves_interface_and_health_endpoint(self) -> None:
@@ -45,7 +45,8 @@ class WebConsoleTests(unittest.TestCase):
                 server.shutdown()
                 server.server_close()
                 thread.join(timeout=3)
-            self.assertIn("基于执行证据的编程智能体", html)
+            self.assertIn("可修复、可验证、可评测的编程智能体", html)
+            self.assertIn("下载 JSON 报告", html)
             self.assertTrue(health["ok"])
 
 

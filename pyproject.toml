@@ -4,18 +4,18 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "minicoder-agent"
-version = "0.1.0"
-description = "A small coding agent implemented without agent frameworks"
+version = "0.2.0"
+description = "A small evidence-gated coding agent with observable self-repair"
 requires-python = ">=3.10"
 dependencies = []
 
 [project.scripts]
 minicoder = "minicoder.cli:main"
 minicoder-web = "minicoder.web:main"
+minicoder-eval = "minicoder.evaluation:main"
 
 [tool.setuptools.packages.find]
 include = ["minicoder*"]
 
 [tool.setuptools.package-data]
 minicoder = ["web_static/*"]
-

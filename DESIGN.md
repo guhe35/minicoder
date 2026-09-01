@@ -2,44 +2,65 @@
 
 ## Control loop
 
-1. Add the system prompt and user task to the message history.
-2. Send the history and JSON tool schemas to the model.
-3. If the model requests tools, execute each tool locally and append structured results.
-4. Send the enlarged history back to the model.
-5. If files changed, require successful test/build/execution evidence after the latest edit.
-6. Reject an unsupported completion attempt and feed the deterministic reason back to the model.
-7. Stop with `verified`, finish a read-only task with `completed`, or hit the step limit.
+MiniCoder uses a model-tool-model loop without an agent framework:
 
-The model decides *which* action to take, while deterministic Python code decides *whether and how* that action is executed.
+1. Send the task, message history and JSON tool schemas to the model.
+2. Execute requested tools inside the selected workspace.
+3. Return structured tool results to the model instead of inventing outcomes.
+4. Record edits and recognized test, build or execution commands.
+5. If verification fails, expose the failure and wait for a subsequent edit.
+6. Count that edit as a repair round, then require fresh verification.
+7. Accept completion only when evidence after the latest edit succeeds.
 
-## Evidence-gated completion
+DeepSeek thinking-mode assistant messages preserve and replay
+`reasoning_content` as required by its Chat Completions protocol.
 
-`verification.py` records changed files and recognized verification commands using a monotonic tool-call sequence. A successful check is valid only when it occurs after the latest edit. A model cannot finish merely by claiming success: missing, stale, or failed evidence produces controller feedback and another model turn.
+## Evidence-gated completion and observable repair
 
-The final CLI report lists changed files, verification runs, the latest exit code, and model/tool-call counts. Recognized evidence includes common test commands (`pytest`, `unittest`, npm, Maven, Gradle, Cargo, Go and .NET), build checks, and direct Python/Node/Java execution. Read-only tasks do not require post-change verification.
+`verification.py` uses a monotonic tool-call sequence. Verification before the
+latest edit is stale. Missing, stale or failed evidence makes the controller
+reject the model's completion request and add a deterministic explanation to
+the next model turn.
 
-When DeepSeek thinking mode is enabled, every assistant message preserves its
-`reasoning_content` field and replays it unchanged with later tool-result requests,
-as required by the DeepSeek Chat Completions protocol.
+A failed verification becomes pending repair state. The first successful code
+edit after it creates a `RepairRound` containing the failed command, exit code,
+changed file and sequence number. A later successful check closes the loop.
+This deliberately distinguishes a real repair from simply rerunning a command.
+
+The Agent emits dedicated `verification_result`, `repair_started` and
+`completion_rejected` events. Both CLI and Web UI consume the same event stream.
+
+## Structured reports and evaluation
+
+Every run can produce a `minicoder.run-report.v1` JSON record containing task,
+workspace, outcome, steps, duration, changed files, all verification commands,
+repair rounds and completion rejections. The browser downloads the same schema
+that `--report` writes from the CLI.
+
+`evaluation.py` aggregates one or more reports into reproducible metrics:
+success rate, verified runs, average steps, average duration, failed
+verifications, repair rounds and completion rejections. This is intentionally
+small: it measures observed runs without claiming that a tiny demo suite is a
+general coding benchmark.
 
 ## Safety boundary
 
-- Every file path is resolved and checked against the workspace root.
-- Files larger than 500 KiB are rejected to limit accidental context growth.
-- Commands run without a shell, use an executable allowlist, and reject composition, redirection, inline code and unsafe Git subcommands.
-- Commands have a timeout and their output is truncated.
-- Exact text replacement verifies the expected match count before writing.
-- Model failures are retried, and tool failures are returned to the model instead of crashing the loop.
+- File paths are resolved below the workspace root.
+- Large files and oversized command output are limited.
+- Commands run without a shell, use an allowlist and reject composition,
+  redirection, inline code and unsafe Git subcommands.
+- Commands have timeouts; exact replacement checks occurrence count.
+- Model failures are retried; tool errors return to the model.
+- Web workspaces must remain below the server root and only one run is active.
+- API credentials stay in the local Python process.
 
-This is risk reduction rather than a complete sandbox. A production version should run commands in an isolated container with resource and network limits.
-
-## Local recording console
-
-`python -m minicoder.web` starts a standard-library HTTP server bound to `127.0.0.1`. The browser submits a task and receives newline-delimited JSON events as the existing Agent callback fires. The server reads `.env`; credentials are never included in frontend payloads. Browser-supplied workspaces must be relative directories below the configured server root, and a lock permits only one active run. The interface visualizes model steps, tool results, completion rejection, changed files and the final evidence trail.
+This reduces risk but is not a complete sandbox. Production execution should
+use an isolated container with resource, process and network limits.
 
 ## Main trade-offs
 
-- Native tool calling gives structured arguments but ties the current adapter to compatible APIs.
-- Whole conversation history is simple and easy to explain, but needs summarization for long tasks.
-- A conservative command allowlist is safer for the demonstration, but supports fewer build tools.
-- `replace_in_file` is predictable for small edits; a unified-diff tool would scale better to complex changes.
+- Whole-history replay is transparent but needs summarization for long tasks.
+- A conservative command allowlist is safer but supports fewer toolchains.
+- Exact replacement is predictable for demos; unified diffs scale better.
+- Repair rounds use observable test/edit order rather than model self-report,
+  but they do not semantically prove that an edit addressed the failure.

@@ -12,10 +12,10 @@
     <div class="grain" aria-hidden="true"></div>
     <header class="masthead reveal reveal-1">
       <div class="brand-block">
-        <span class="brand-index">MC / 01</span>
+        <span class="brand-index">MC / 02</span>
         <div>
           <h1>MiniCoder</h1>
-          <p>基于执行证据的编程智能体</p>
+          <p>可修复、可验证、可评测的编程智能体</p>
         </div>
       </div>
       <div class="system-state" id="system-state" data-state="connecting">
@@ -30,7 +30,7 @@
           <div class="section-kicker">01 / 任务配置</div>
           <h2>发起真实编程任务</h2>
           <p class="panel-copy">
-            模型负责决定下一步，本地工具负责真实执行，验证证据负责判断任务是否完成。
+            模型负责决策，本地工具负责执行；测试失败将触发修复轮次，最终由确定性证据判断是否完成。
           </p>
 
           <form id="run-form">
@@ -75,7 +75,7 @@
           <div class="trace-empty" id="trace-empty">
             <div class="empty-mark">⌁</div>
             <p>等待任务开始</p>
-            <span>模型轮次、工具调用和执行结果将在这里实时显示。</span>
+            <span>模型轮次、验证失败和修复动作将在这里实时显示。</span>
           </div>
           <div class="trace-list" id="trace-list" aria-live="polite"></div>
         </section>
@@ -112,6 +112,21 @@
         </div>
 
         <div class="final-answer" id="final-answer" hidden>
+          <div class="result-heading">
+            <span class="metric-label">结构化运行报告</span>
+            <button id="download-report" type="button" disabled>下载 JSON 报告</button>
+          </div>
+          <div class="run-metrics" aria-label="运行指标">
+            <article><span>执行步骤</span><strong id="result-steps">—</strong></article>
+            <article><span>运行耗时</span><strong id="result-duration">—</strong></article>
+            <article><span>失败验证</span><strong id="failed-verifications">—</strong></article>
+            <article><span>修复轮次</span><strong id="repair-rounds">—</strong></article>
+            <article><span>完成拒绝</span><strong id="completion-rejections">—</strong></article>
+          </div>
+          <div class="repair-history" id="repair-history" hidden>
+            <span class="metric-label">自修复记录</span>
+            <div id="repair-list"></div>
+          </div>
           <span class="metric-label">智能体总结</span>
           <p id="answer-text"></p>
           <div class="reason-line" id="reason-text"></div>
@@ -119,11 +134,8 @@
       </section>
 
       <section class="principle-strip reveal reveal-4" aria-label="架构原则">
-        <span>模型决策</span>
-        <i>→</i>
-        <span>工具执行</span>
-        <i>→</i>
-        <span>证据验证</span>
+        <span>模型决策</span><i>→</i><span>工具执行</span><i>→</i>
+        <span>证据验证</span><i>→</i><span>失败修复</span><i>→</i><span>量化报告</span>
       </section>
     </main>
 

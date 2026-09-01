@@ -15,6 +15,7 @@ from urllib.parse import urlparse
 
 from .agent import Agent
 from .config import Config
+from .evaluation import build_run_record
 from .model_client import OpenAICompatibleClient
 from .tools import ToolRegistry
 
@@ -76,7 +77,7 @@ class MiniCoderRequestHandler(BaseHTTPRequestHandler):
         if args and str(args[1]).startswith(("4", "5")):
             super().log_message(format, *args)
 
-    def do_GET(self) -> None:  # noqa: N802 - required by BaseHTTPRequestHandler
+    def do_GET(self) -> None:  # noqa: N802
         path = urlparse(self.path).path
         if path == "/api/health":
             self._send_json(
@@ -110,7 +111,7 @@ class MiniCoderRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(content)
 
-    def do_POST(self) -> None:  # noqa: N802 - required by BaseHTTPRequestHandler
+    def do_POST(self) -> None:  # noqa: N802
         if urlparse(self.path).path != "/api/run":
             self._send_json(HTTPStatus.NOT_FOUND, {"error": "Not found"})
             return
@@ -148,12 +149,10 @@ class MiniCoderRequestHandler(BaseHTTPRequestHandler):
             self.wfile.flush()
 
         try:
+            workspace_name = workspace.relative_to(self.server.root).as_posix()
             emit(
                 "run_started",
-                {
-                    "workspace": workspace.relative_to(self.server.root).as_posix(),
-                    "max_steps": max_steps,
-                },
+                {"workspace": workspace_name, "max_steps": max_steps},
             )
             config = Config.from_env(self.server.env_file)
             agent = Agent(
@@ -163,23 +162,23 @@ class MiniCoderRequestHandler(BaseHTTPRequestHandler):
                 event_handler=emit,
             )
             result = agent.run(task)
+            run_record = build_run_record(task, workspace_name, result)
             emit(
                 "final_result",
                 {
                     "status": result.status,
                     "answer": result.answer,
                     "steps": result.steps,
+                    "duration_seconds": result.duration_seconds,
                     "verification": result.verification.to_dict(),
+                    "report": run_record,
                 },
             )
         except (BrokenPipeError, ConnectionResetError):
             pass
-        except Exception as exc:  # Keep the browser stream readable on failures.
+        except Exception as exc:
             try:
-                emit(
-                    "run_error",
-                    {"error": f"{type(exc).__name__}: {exc}"},
-                )
+                emit("run_error", {"error": f"{type(exc).__name__}: {exc}"})
             except (BrokenPipeError, ConnectionResetError):
                 pass
         finally:

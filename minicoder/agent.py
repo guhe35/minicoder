@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 from typing import Any, Callable
 
@@ -13,6 +14,7 @@ from .verification import ExecutionState, VerificationReport
 SYSTEM_PROMPT = """You are MiniCoder, a coding agent working in a local project workspace.
 Use tools to inspect the project before editing. Make the smallest correct change, run relevant tests,
 and recover from tool or test failures. Never invent tool results. Keep all work inside the workspace.
+If a verification command fails, inspect its output, repair the code, and run verification again.
 If you modify files, a recognized verification command must succeed after the latest modification;
 otherwise the deterministic completion gate will reject your final answer and ask you to continue.
 When the task is complete, respond with a concise summary of changes and tests. If blocked, explain why.
@@ -26,6 +28,7 @@ class AgentResult:
     steps: int
     messages: list[dict[str, Any]]
     verification: VerificationReport
+    duration_seconds: float
 
 
 class Agent:
@@ -46,11 +49,22 @@ class Agent:
     def run(self, task: str) -> AgentResult:
         if not task.strip():
             raise ValueError("Task must not be empty")
+        started_at = time.perf_counter()
         messages: list[dict[str, Any]] = [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": task.strip()},
         ]
         state = ExecutionState()
+
+        def build_result(status: str, answer: str, steps: int) -> AgentResult:
+            return AgentResult(
+                status=status,
+                answer=answer,
+                steps=steps,
+                messages=messages,
+                verification=state.build_report(),
+                duration_seconds=round(time.perf_counter() - started_at, 3),
+            )
 
         for step in range(1, self.max_steps + 1):
             self.event_handler("model_request", {"step": step})
@@ -63,9 +77,8 @@ class Agent:
                     answer = "The model returned neither a tool call nor a final answer."
                     status = "error"
                     messages.append({"role": "assistant", "content": answer})
-                    report = state.build_report()
                     self.event_handler("finished", {"step": step, "status": status})
-                    return AgentResult(status, answer, step, messages, report)
+                    return build_result(status, answer, step)
 
                 final_message: dict[str, Any] = {"role": "assistant", "content": answer}
                 if response.reasoning_content is not None:
@@ -74,10 +87,12 @@ class Agent:
 
                 completion = state.check_completion()
                 if not completion.allowed:
+                    state.record_completion_rejection()
                     feedback = (
                         "[Automated verification gate] Completion rejected: "
-                        f"{completion.reason} Continue working, run an appropriate test, "
-                        "build, or executable check with run_command, and only then finish."
+                        f"{completion.reason} Continue working, inspect failed output, "
+                        "run an appropriate test, build, or executable check with "
+                        "run_command, and only then finish."
                     )
                     messages.append({"role": "user", "content": feedback})
                     self.event_handler(
@@ -87,17 +102,14 @@ class Agent:
                     continue
 
                 status = completion.status
-                report = state.build_report()
                 self.event_handler("finished", {"step": step, "status": status})
-                return AgentResult(status, answer, step, messages, report)
+                return build_result(status, answer, step)
 
             assistant_message: dict[str, Any] = {
                 "role": "assistant",
                 "content": response.content or None,
                 "tool_calls": response.raw_tool_calls,
             }
-            # DeepSeek thinking-mode tool calls require this field to be replayed
-            # unchanged in every subsequent request.
             if response.reasoning_content is not None:
                 assistant_message["reasoning_content"] = response.reasoning_content
             messages.append(assistant_message)
@@ -108,10 +120,24 @@ class Agent:
                     {"step": step, "tool": call.name, "arguments": call.arguments},
                 )
                 result = self.tools.execute(call.name, call.arguments)
+                verification_count = len(state.verification_runs)
+                repair_count = len(state.repair_rounds)
                 state.record_tool_call(call.name, call.arguments, result)
                 self.event_handler(
                     "tool_end", {"step": step, "tool": call.name, "result": result}
                 )
+
+                if len(state.verification_runs) > verification_count:
+                    run = state.verification_runs[-1]
+                    self.event_handler(
+                        "verification_result", {"step": step, **run.to_dict()}
+                    )
+                if len(state.repair_rounds) > repair_count:
+                    repair = state.repair_rounds[-1]
+                    self.event_handler(
+                        "repair_started", {"step": step, **repair.to_dict()}
+                    )
+
                 messages.append(
                     {
                         "role": "tool",
@@ -122,6 +148,4 @@ class Agent:
 
         answer = f"Stopped after reaching the safety limit of {self.max_steps} model steps."
         self.event_handler("finished", {"step": self.max_steps, "status": "step_limit"})
-        return AgentResult(
-            "step_limit", answer, self.max_steps, messages, state.build_report()
-        )
+        return build_result("step_limit", answer, self.max_steps)
